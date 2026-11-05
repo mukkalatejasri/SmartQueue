@@ -1,0 +1,134 @@
+
+import 'package:flutter/material.dart';
+
+void main() => runApp(const MaterialApp(
+  debugShowCheckedModeBanner: false,
+  home: SmartQueue(),
+));
+
+class SmartQueue extends StatefulWidget {
+  const SmartQueue({super.key});
+  @override
+  State<SmartQueue> createState() => _SmartQueueState();
+}
+
+class _SmartQueueState extends State<SmartQueue> {
+  int page = 0, next = 102, current = 100;
+  int? token;
+  String name = '', service = 'General Consultation';
+  final controller = TextEditingController();
+
+  final services = [
+    'General Consultation', 'Customer Support', 'Bill Payment',
+    'Banking Service', 'Document Verification', 'New Registration',
+    'Technical Support', 'Appointment Booking', 'Returns & Exchange',
+    'General Enquiry'
+  ];
+
+  int get ahead => token == null ? 0 : (token! - current - 1).clamp(0, 999);
+
+  void book() {
+    if (controller.text.trim().isEmpty || token != null) return;
+    setState(() {
+      name = controller.text.trim();
+      token = next++;
+      page = 2;
+    });
+  }
+
+  Widget info(String title, String value) => Card(
+    child: ListTile(title: Text(title), subtitle: Text(value)),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final screens = [
+      home(), booking(), queue(), profile()
+    ];
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('SmartQueue')),
+      body: screens[page],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: page,
+        onDestinationSelected: (i) => setState(() => page = i),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.add), label: 'Book'),
+          NavigationDestination(icon: Icon(Icons.confirmation_number), label: 'Queue'),
+          NavigationDestination(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+      ),
+    );
+  }
+
+  Widget home() => ListView(padding: const EdgeInsets.all(20), children: [
+    const Text('Welcome to SmartQueue', style: TextStyle(fontSize: 24)),
+    info('Current Token', '#$current'),
+    info('Next Token', '#$next'),
+    ElevatedButton(onPressed: () => setState(() => page = 1),
+        child: const Text('Book Now')),
+    ElevatedButton(onPressed: () => setState(() => page = 2),
+        child: const Text('View My Queue')),
+    const Text('Available Services', style: TextStyle(fontSize: 20)),
+    ...services.map((s) => ListTile(
+      leading: const Icon(Icons.miscellaneous_services),
+      title: Text(s),
+      onTap: () => setState(() { service = s; page = 1; }),
+    )),
+  ]);
+
+  Widget booking() => ListView(padding: const EdgeInsets.all(20), children: [
+    const Text('Book Your Token', style: TextStyle(fontSize: 24)),
+    TextField(controller: controller,
+        decoration: const InputDecoration(labelText: 'Your Name')),
+    DropdownButton<String>(
+      isExpanded: true,
+      value: service,
+      items: services.map((s) =>
+          DropdownMenuItem(value: s, child: Text(s))).toList(),
+      onChanged: (s) => setState(() => service = s!),
+    ),
+    ElevatedButton(onPressed: book, child: const Text('Confirm Booking')),
+  ]);
+
+  Widget queue() => token == null
+      ? Center(child: ElevatedButton(
+      onPressed: () => setState(() => page = 1),
+      child: const Text('Book a Token')))
+      : ListView(padding: const EdgeInsets.all(20), children: [
+    Text('Your Token: #$token',
+        style: const TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+    info('Customer', name),
+    info('Service', service),
+    info('People Ahead', '$ahead'),
+    info('Estimated Waiting Time', '${ahead * 5} minutes'),
+    ElevatedButton(
+        onPressed: () => setState(() => token = null),
+        child: const Text('Cancel Booking')),
+  ]);
+
+  Widget profile() => ListView(children: [
+    const ListTile(leading: Icon(Icons.person), title: Text('SmartQueue User')),
+    ListTile(title: const Text('My Details'),
+        onTap: () => showInfo('Name: $name')),
+    ListTile(title: const Text('About SmartQueue'),
+        onTap: () => showInfo('SmartQueue Queue Management App')),
+    ListTile(title: const Text('Help & Support'),
+        onTap: () => showInfo('Contact your service counter for help')),
+    ListTile(title: const Text('Contact Us'),
+        onTap: () => showInfo('support@smartqueue.com')),
+    ListTile(title: const Text('Privacy Policy'),
+        onTap: () => showInfo('Your details are used for this demo')),
+  ]);
+
+  void showInfo(String message) => showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      content: Text(message),
+      actions: [TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'))],
+    ),
+  );
+}
